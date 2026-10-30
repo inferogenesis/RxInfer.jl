@@ -3,6 +3,7 @@
 
     # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+    include(joinpath(@__DIR__, "kalman_reference.jl"))
 
     @model function univariate_lgssm_model(y, x0, c, P)
         x_prior ~ Normal(μ = mean(x0), v = var(x0))
@@ -46,6 +47,15 @@
     @test all(var.(x_estimated) .> 0.0)
     @test length(fe) === 1
     @test abs(last(fe) - 1854.297647) < 0.01
+
+    ## Compare against the closed-form Kalman/RTS reference
+    # `x[i] ~ x_prev + c` is a deterministic transition: A = 1, u = c, C = 1, Q = 0
+    reference = kalman_rts_reference(
+        data, mean(x0_prior), var(x0_prior), 1.0, 1.0, 1.0, 0.0, P
+    )
+    @test all(isapprox.(mean.(x_estimated), reference.smoothed_means; rtol = 1.0e-9))
+    @test all(isapprox.(var.(x_estimated), reference.smoothed_covs; rtol = 1.0e-9))
+    @test last(fe) ≈ -reference.log_evidence rtol = 1.0e-9
 
     ## Create output plots
     @test_plot "models" "ulgssm" begin

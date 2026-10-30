@@ -3,6 +3,7 @@
 
     # `include(test/utiltests.jl)`
     include(joinpath(@__DIR__, "..", "..", "utiltests.jl"))
+    include(joinpath(@__DIR__, "kalman_reference.jl"))
 
     ## Model definition #1
     @model function multivariate_lgssm_model(y, x0, A, B, Q, P)
@@ -114,6 +115,8 @@
         push!(v_fe, fe)
     end
 
+    reference = kalman_rts_reference(y, mean(x0), cov(x0), A, zeros(2), B, Q, P)
+
     for (result, xmarginals, fe) in zip(v_results, v_marginals, v_fe)
         ## Test inference results
         @test length(xmarginals) === n
@@ -126,6 +129,11 @@
         @test all(isposdef.(cov.(xmarginals)))
         @test length(fe) === 1
         @test abs(last(fe) - 6275.9015944677) < 0.01
+
+        ## Compare against the closed-form Kalman/RTS reference
+        @test all(isapprox.(mean.(xmarginals), reference.smoothed_means; rtol = 1.0e-9))
+        @test all(isapprox.(cov.(xmarginals), reference.smoothed_covs; rtol = 1.0e-9))
+        @test last(fe) ≈ -reference.log_evidence rtol = 1.0e-9
     end
 
     # Check that all results are equal (check against the first one)
