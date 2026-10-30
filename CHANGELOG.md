@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The tests of the univariate and multivariate linear Gaussian state space models compare RxInfer's marginals and Bethe free energy against a closed-form Kalman filter and Rauch–Tung–Striebel smoother.
+
 ## [6.1.1] - 2026-10-23
 
 ### Fixed
